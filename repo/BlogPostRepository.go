@@ -26,3 +26,22 @@ func (repo *BlogPostRepository) Create(blogPost *model.BlogPost) (*model.BlogPos
 	}
 	return blogPost, nil
 }
+
+// func (repo *BlogPostRepository) FindById(id string) (model.BlogPost, error) {
+// 	blogPost := model.BlogPost{}
+// 	dbResult := repo.DatabaseConnection.First(&blogPost, "ID = ?", id)
+// 	if dbResult != nil {
+// 		return blogPost, dbResult.Error
+// 	}
+// 	return blogPost, nil
+// }
+
+func (repo *BlogPostRepository) FindById(id int) (model.BlogPost, error) {
+	blogPost := model.BlogPost{}
+
+	dbResult := repo.DatabaseConnection.Preload("BlogPostComment").First(&blogPost, id)
+	if dbResult != nil {
+		return blogPost, dbResult.Error
+	}
+	return blogPost, nil
+}
