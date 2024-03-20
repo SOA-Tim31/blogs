@@ -7,8 +7,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func SetupRoutes(handler *handler.BlogHandler) http.Handler {
+func SetupRoutes(handler *handler.BlogPostHandler, handler1 *handler.BlogPostCommentHandler) http.Handler {
 	router := mux.NewRouter().StrictSlash(true)
+
+	router.HandleFunc("/blog/create", handler.Create).Methods("POST", "OPTIONS")
+	router.HandleFunc("/blog/all", handler.FindAllBlogPosts).Methods("GET", "OPTIONS")
+	router.HandleFunc("/blog/get/{id}", handler.GetById).Methods("GET", "OPTIONS")
+	router.HandleFunc("/blogComment/create", handler1.AddComment).Methods("POST", "OPTIONS")
 
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
 

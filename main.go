@@ -2,6 +2,7 @@ package main
 
 import (
 	"blogs/handler"
+	"blogs/migration"
 	"blogs/repo"
 	"blogs/routing"
 	"blogs/service"
@@ -17,9 +18,19 @@ func initDB() *gorm.DB {
 	database, err := gorm.Open(postgres.Open(connection_url), &gorm.Config{})
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to connect to database: %v", err)
+		return nil
 	}
 
+	if err := database.Exec("CREATE SCHEMA IF NOT EXISTS blog_posts").Error; err != nil {
+		log.Fatalf("Failed to create schema: %v", err)
+		return nil
+	}
+
+	if err := migration.AutoMigrate(database); err != nil {
+		log.Fatalf("Failed to perform auto migration: %v", err)
+		return nil
+	}
 	return database
 }
 
@@ -30,12 +41,16 @@ func main() {
 		return
 	}
 
-	blogRepo := &repo.BlogRepository{DatabaseConnection: database}
-	blogService := &service.BlogService{BlogRepo: blogRepo}
-	blogHandler := &handler.BlogHandler{BlogService: blogService}
+	blogPostRepo := &repo.BlogPostRepository{DatabaseConnection: database}
+	blogPostService := &service.BlogPostService{BlogPostRepo: blogPostRepo}
+	blogPostHandler := &handler.BlogPostHandler{BlogPostService: blogPostService}
 
-	router := routing.SetupRoutes(blogHandler)
+	blogPostCommentRepo := &repo.BlogPostCommentRepository{DatabaseConnection: database}
+	blogPostCommentService := &service.BlogPostCommentService{BlogPostCommentRepo: blogPostCommentRepo}
+	blogPostCommentHandler := &handler.BlogPostCommentHandler{BlogPostCommentService: blogPostCommentService}
+
+	router := routing.SetupRoutes(blogPostHandler, blogPostCommentHandler)
 
 	log.Println("Server starting...")
-	log.Fatal(http.ListenAndServe(":8081", router))
+	log.Fatal(http.ListenAndServe(":8082", router))
 }
